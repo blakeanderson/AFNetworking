@@ -148,6 +148,11 @@ static char kAFImageRequestOperationObjectKey;
     self.af_imageRequestOperation = nil;
 }
 
+- (UIImage*)checkCacheForImageRequest:(NSURLRequest *)request
+{
+  return [[[self class] af_sharedImageCache] cachedImageForRequest:request];
+}
+
 @end
 
 #pragma mark -
