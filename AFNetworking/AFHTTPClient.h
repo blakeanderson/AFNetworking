@@ -29,7 +29,7 @@
  
  ## Automatic Content Parsing
  
- Instances of `AFHTTPClient` may specify which types of requests it expects and should handle by registering HTTP operation classes for automatic parsing. Registered classes will determine whether they can handle a particular request, and then construct a request operation accordingly in `enqueueHTTPRequestOperationWithRequest:success:failure`. See `AFHTTPClientOperation` for further details.
+ Instances of `AFHTTPClient` may specify which types of requests it expects and should handle by registering HTTP operation classes for automatic parsing. Registered classes will determine whether they can handle a particular request, and then construct a request operation accordingly in `enqueueHTTPRequestOperationWithRequest:success:failure`.
  
  ## Subclassing Notes
  
@@ -46,23 +46,23 @@
  By default, `AFHTTPClient` sets the following HTTP headers:
  
  - `Accept-Encoding: gzip`
- - `Accept-Language: ([NSLocale preferredLanguages]), en-us;q=0.8`
+ - `Accept-Language: (comma-delimited preferred languages), en-us;q=0.8`
  - `User-Agent: (generated user agent)`
  
  You can override these HTTP headers or define new ones using `setDefaultHeader:value:`.
  
  ## URL Construction Using Relative Paths
  
- Both `requestWithMethod:path:parameters` and `multipartFormRequestWithMethod:path:parameters:constructingBodyWithBlock:` construct URLs from the path relative to the `baseURL`, using `NSURL +URLWithString:relativeToURL:`. Below are a few examples of how `baseURL` and relative paths interact:
+ Both `-requestWithMethod:path:parameters:` and `-multipartFormRequestWithMethod:path:parameters:constructingBodyWithBlock:` construct URLs from the path relative to the `-baseURL`, using `NSURL +URLWithString:relativeToURL:`. Below are a few examples of how `baseURL` and relative paths interact:
  
-    NSURL *baseURL = [NSURL URLWithString:@"http://example.com/v1/"];
-    [NSURL URLWithString:@"foo" relativeToURL:baseURL];                     // http://example.com/v1/foo
-    [NSURL URLWithString:@"foo?bar=baz" relativeToURL:baseURL];             // http://example.com/v1/foo?bar=baz
-    [NSURL URLWithString:@"/foo" relativeToURL:baseURL];                    // http://example.com/foo
-    [NSURL URLWithString:@"foo/" relativeToURL:baseURL];                    // http://example.com/v1/foo
-    [NSURL URLWithString:@"/foo/" relativeToURL:baseURL];                   // http://example.com/foo/
-    [NSURL URLWithString:@"http://example2.com/" relativeToURL:baseURL];    // http://example2.com/
- 
+    NSURL *baseURL = [NSURL URLWithString:@"http://example.com/v1/"];  
+    [NSURL URLWithString:@"foo" relativeToURL:baseURL];                  // http://example.com/v1/foo
+    [NSURL URLWithString:@"foo?bar=baz" relativeToURL:baseURL];          // http://example.com/v1/foo?bar=baz
+    [NSURL URLWithString:@"/foo" relativeToURL:baseURL];                 // http://example.com/foo
+    [NSURL URLWithString:@"foo/" relativeToURL:baseURL];                 // http://example.com/v1/foo
+    [NSURL URLWithString:@"/foo/" relativeToURL:baseURL];                // http://example.com/foo/
+    [NSURL URLWithString:@"http://example2.com/" relativeToURL:baseURL]; // http://example2.com/
+
  Also important to note is that a trailing slash will be added to any `baseURL` without one, which would otherwise cause unexpected behavior when constructing URLs using paths without a leading slash.
 
  ## NSCoding / NSCopying Conformance
@@ -88,7 +88,6 @@ typedef enum {
     AFPropertyListParameterEncoding,
 } AFHTTPClientParameterEncoding;
 
-@protocol AFHTTPClientOperation;
 @protocol AFMultipartFormData;
 
 @interface AFHTTPClient : NSObject <NSCoding, NSCopying>
@@ -100,7 +99,7 @@ typedef enum {
 /**
  The url used as the base for paths specified in methods such as `getPath:parameters:success:failure`
  */
-@property (readonly, nonatomic, retain) NSURL *baseURL;
+@property (readonly, nonatomic) NSURL *baseURL;
 
 /**
  The string encoding used in constructing url requests. This is `NSUTF8StringEncoding` by default.
@@ -117,12 +116,12 @@ typedef enum {
 /**
  The operation queue which manages operations enqueued by the HTTP client.
  */
-@property (readonly, nonatomic, retain) NSOperationQueue *operationQueue;
+@property (readonly, nonatomic) NSOperationQueue *operationQueue;
 
 /**
  The reachability status from the device to the current `baseURL` of the `AFHTTPClient`.
 
-  @warning This property requires the `SystemConfiguration` framework. Add it in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (Prefix.pch).
+  @warning This property requires the `SystemConfiguration` framework. Add it in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (`Prefix.pch`).
  */
 #ifdef _SYSTEMCONFIGURATION_H
 @property (readonly, nonatomic, assign) AFNetworkReachabilityStatus networkReachabilityStatus;
@@ -161,7 +160,7 @@ typedef enum {
  
  @param block A block object to be executed when the network availability of the `baseURL` host changes.. This block has no return value and takes a single argument which represents the various reachability states from the device to the `baseURL`.
  
- @warning This method requires the `SystemConfiguration` framework. Add it in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (Prefix.pch).
+ @warning This method requires the `SystemConfiguration` framework. Add it in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (`Prefix.pch`).
  */
 #ifdef _SYSTEMCONFIGURATION_H
 - (void)setReachabilityStatusChangeBlock:(void (^)(AFNetworkReachabilityStatus status))block;
@@ -174,22 +173,18 @@ typedef enum {
 /**
  Attempts to register a subclass of `AFHTTPRequestOperation`, adding it to a chain to automatically generate request operations from a URL request.
  
- @param The subclass of `AFHTTPRequestOperation` to register
+ @param operationClass The subclass of `AFHTTPRequestOperation` to register
  
  @return `YES` if the registration is successful, `NO` otherwise. The only failure condition is if `operationClass` is not a subclass of `AFHTTPRequestOperation`.
  
  @discussion When `enqueueHTTPRequestOperationWithRequest:success:failure` is invoked, each registered class is consulted in turn to see if it can handle the specific request. The first class to return `YES` when sent a `canProcessRequest:` message is used to create an operation using `initWithURLRequest:` and do `setCompletionBlockWithSuccess:failure:`. There is no guarantee that all registered classes will be consulted. Classes are consulted in the reverse order of their registration. Attempting to register an already-registered class will move it to the top of the list.
- 
- @see `AFHTTPClientOperation`
  */
 - (BOOL)registerHTTPOperationClass:(Class)operationClass;
 
 /**
- Unregisters the specified subclass of `AFHTTPRequestOperation`.
- 
- @param The class conforming to the `AFHTTPClientOperation` protocol to unregister
- 
- @discussion After this method is invoked, `operationClass` is no longer consulted when `requestWithMethod:path:parameters` is invoked.
+ Unregisters the specified subclass of `AFHTTPRequestOperation` from the chain of classes consulted when `-requestWithMethod:path:parameters` is called.
+
+ @param operationClass The subclass of `AFHTTPRequestOperation` to register 
  */
 - (void)unregisterHTTPOperationClass:(Class)operationClass;
 
@@ -304,7 +299,7 @@ typedef enum {
  Cancels all operations in the HTTP client's operation queue whose URLs match the specified HTTP method and path.
  
  @param method The HTTP method to match for the cancelled requests, such as `GET`, `POST`, `PUT`, or `DELETE`. If `nil`, all request operations with URLs matching the path will be cancelled. 
- @param url The path to match for the cancelled requests.
+ @param path The path to match for the cancelled requests.
  */
 - (void)cancelAllHTTPOperationsWithMethod:(NSString *)method path:(NSString *)path;
 
@@ -348,7 +343,7 @@ typedef enum {
  @param success A block object to be executed when the request operation finishes successfully. This block has no return value and takes two arguments: the created request operation and the object created from the response data of request.
  @param failure A block object to be executed when the request operation finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes two arguments:, the created request operation and the `NSError` object describing the network or parsing error that occurred.
  
- @see HTTPRequestOperationWithRequest:success:failure
+ @see -HTTPRequestOperationWithRequest:success:failure:
  */
 - (void)getPath:(NSString *)path
      parameters:(NSDictionary *)parameters
@@ -363,7 +358,7 @@ typedef enum {
  @param success A block object to be executed when the request operation finishes successfully. This block has no return value and takes two arguments: the created request operation and the object created from the response data of request.
  @param failure A block object to be executed when the request operation finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes two arguments:, the created request operation and the `NSError` object describing the network or parsing error that occurred.
  
- @see HTTPRequestOperationWithRequest:success:failure
+ @see -HTTPRequestOperationWithRequest:success:failure:
  */
 - (void)postPath:(NSString *)path 
       parameters:(NSDictionary *)parameters 
@@ -378,7 +373,7 @@ typedef enum {
  @param success A block object to be executed when the request operation finishes successfully. This block has no return value and takes two arguments: the created request operation and the object created from the response data of request.
  @param failure A block object to be executed when the request operation finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes two arguments:, the created request operation and the `NSError` object describing the network or parsing error that occurred.
  
- @see HTTPRequestOperationWithRequest:success:failure
+ @see -HTTPRequestOperationWithRequest:success:failure:
  */
 - (void)putPath:(NSString *)path 
      parameters:(NSDictionary *)parameters 
@@ -393,7 +388,7 @@ typedef enum {
  @param success A block object to be executed when the request operation finishes successfully. This block has no return value and takes two arguments: the created request operation and the object created from the response data of request.
  @param failure A block object to be executed when the request operation finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes two arguments:, the created request operation and the `NSError` object describing the network or parsing error that occurred.
  
- @see HTTPRequestOperationWithRequest:success:failure
+ @see -HTTPRequestOperationWithRequest:success:failure:
  */
 - (void)deletePath:(NSString *)path 
         parameters:(NSDictionary *)parameters 
@@ -408,7 +403,7 @@ typedef enum {
  @param success A block object to be executed when the request operation finishes successfully. This block has no return value and takes two arguments: the created request operation and the object created from the response data of request.
  @param failure A block object to be executed when the request operation finishes unsuccessfully, or that finishes successfully, but encountered an error while parsing the response data. This block has no return value and takes two arguments:, the created request operation and the `NSError` object describing the network or parsing error that occurred.
  
- @see HTTPRequestOperationWithRequest:success:failure
+ @see -HTTPRequestOperationWithRequest:success:failure:
  */
 - (void)patchPath:(NSString *)path
        parameters:(NSDictionary *)parameters 
@@ -443,6 +438,14 @@ typedef enum {
  
  `AFNetworkReachabilityStatusReachableViaWiFi`
     The `baseURL` host can be reached via a Wi-Fi connection.
+ 
+ ### Keys for Notification UserInfo Dictionary
+ 
+ Strings that are used as keys in a `userInfo` dictionary in a network reachability status change notification.
+ 
+ `AFNetworkingReachabilityNotificationStatusItem`
+    A key in the userInfo dictionary in a `AFNetworkingReachabilityDidChangeNotification` notification.  
+    The corresponding value is an `NSNumber` object representing the `AFNetworkReachabilityStatus` value for the current reachability status. 
  
  ### Parameter Encoding
  
@@ -488,21 +491,19 @@ extern NSString * AFQueryStringFromParametersWithEncoding(NSDictionary *paramete
 
 /**
  Posted when network reachability changes.
- The notification object is an `NSNumber` object containing the boolean value for the current network reachability.
- This notification contains no information in the `userInfo` dictionary.
+ This notification assigns no notification object. The `userInfo` dictionary contains an `NSNumber` object under the `AFNetworkingReachabilityNotificationStatusItem` key, representing the `AFNetworkReachabilityStatus` value for the current network reachability.
  
- @warning In order for network reachability to be monitored, include the `SystemConfiguration` framework in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (Prefix.pch).
+ @warning In order for network reachability to be monitored, include the `SystemConfiguration` framework in the active target's "Link Binary With Library" build phase, and add `#import <SystemConfiguration/SystemConfiguration.h>` to the header prefix of the project (`Prefix.pch`).
  */
 #ifdef _SYSTEMCONFIGURATION_H
 extern NSString * const AFNetworkingReachabilityDidChangeNotification;
+extern NSString * const AFNetworkingReachabilityNotificationStatusItem;
 #endif
 
 #pragma mark -
 
 /**
- The `AFMultipartFormData` protocol defines the methods supported by the parameter in the block argument of `multipartFormRequestWithMethod:path:parameters:constructingBodyWithBlock:`.
- 
- @see `AFHTTPClient -multipartFormRequestWithMethod:path:parameters:constructingBodyWithBlock:`
+ The `AFMultipartFormData` protocol defines the methods supported by the parameter in the block argument of `-multipartFormRequestWithMethod:path:parameters:constructingBodyWithBlock:`.
  */
 @protocol AFMultipartFormData
 
@@ -512,7 +513,8 @@ extern NSString * const AFNetworkingReachabilityDidChangeNotification;
  @param headers The HTTP headers to be appended to the form data.
  @param body The data to be encoded and appended to the form data.
  */
-- (void)appendPartWithHeaders:(NSDictionary *)headers body:(NSData *)body;
+- (void)appendPartWithHeaders:(NSDictionary *)headers
+                         body:(NSData *)body;
 
 /**
  Appends the HTTP headers `Content-Disposition: form-data; name=#{name}"`, followed by the encoded data and the multipart form boundary.
@@ -520,17 +522,21 @@ extern NSString * const AFNetworkingReachabilityDidChangeNotification;
  @param data The data to be encoded and appended to the form data.
  @param name The name to be associated with the specified data. This parameter must not be `nil`.
  */
-- (void)appendPartWithFormData:(NSData *)data name:(NSString *)name;
+- (void)appendPartWithFormData:(NSData *)data
+                          name:(NSString *)name;
 
 /**
  Appends the HTTP header `Content-Disposition: file; filename=#{filename}; name=#{name}"` and `Content-Type: #{mimeType}`, followed by the encoded file data and the multipart form boundary.
  
  @param data The data to be encoded and appended to the form data.
  @param name The name to be associated with the specified data. This parameter must not be `nil`.
+ @param fileName The filename to be associated with the specified data. This parameter must not be `nil`.
  @param mimeType The MIME type of the specified data. (For example, the MIME type for a JPEG image is image/jpeg.) For a list of valid MIME types, see http://www.iana.org/assignments/media-types/. This parameter must not be `nil`.
- @param filename The filename to be associated with the specified data. This parameter must not be `nil`.
  */
-- (void)appendPartWithFileData:(NSData *)data name:(NSString *)name fileName:(NSString *)fileName mimeType:(NSString *)mimeType;
+- (void)appendPartWithFileData:(NSData *)data
+                          name:(NSString *)name
+                      fileName:(NSString *)fileName
+                      mimeType:(NSString *)mimeType;
 
 /**
  Appends the HTTP header `Content-Disposition: file; filename=#{generated filename}; name=#{name}"` and `Content-Type: #{generated mimeType}`, followed by the encoded file data and the multipart form boundary.
@@ -543,7 +549,9 @@ extern NSString * const AFNetworkingReachabilityDidChangeNotification;
  
  @discussion The filename and MIME type for this data in the form will be automatically generated, using `NSURLResponse` `-suggestedFilename` and `-MIMEType`, respectively.
  */
-- (BOOL)appendPartWithFileURL:(NSURL *)fileURL name:(NSString *)name error:(NSError **)error;
+- (BOOL)appendPartWithFileURL:(NSURL *)fileURL
+                         name:(NSString *)name
+                        error:(NSError **)error;
 
 /**
  Appends encoded data to the form data.
