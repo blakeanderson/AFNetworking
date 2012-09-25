@@ -71,6 +71,8 @@
  */
 - (void)cancelImageRequestOperation;
 
+- (UIImage*)checkCacheForImageRequest:(NSURLRequest *)request;
+
 @end
 
 #endif
